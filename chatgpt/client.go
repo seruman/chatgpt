@@ -134,8 +134,12 @@ func (c *Client) doConversation(
 	if err != nil {
 		return err
 	}
-
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		// TODO(selman): check body for error message.
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
@@ -212,6 +216,11 @@ func (c *Client) doAuthSession(ctx context.Context) (*AuthSessionResponse, error
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		// TODO(selman): check body for error message.
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 
 	var authResponse AuthSessionResponse
 	// TODO(selman): reuse decoder?
