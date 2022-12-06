@@ -144,20 +144,25 @@ func (c *Client) doConversation(
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		line := scanner.Bytes()
-		event := bytes.TrimPrefix(line, []byte("data: "))
 
-		if len(event) == 0 {
+		if len(line) == 0 {
 			continue
 		}
 
-		if bytes.Equal(event, []byte(conversationEOF)) {
-			return nil
+		if bytes.HasPrefix(line, []byte(sseDataPrefix)) {
+			data := bytes.TrimPrefix(line, []byte(sseDataPrefix))
+
+			if bytes.Equal(data, []byte(conversationEOF)) {
+				return nil
+			}
+
+			var cr ConversationResponse
+			err := json.Unmarshal(data, &cr)
+
+			handler(cr, err)
+		} else {
+			// TODO(selman): unknown
 		}
-
-		var cr ConversationResponse
-		err := json.Unmarshal(event, &cr)
-
-		handler(cr, err)
 
 	}
 
