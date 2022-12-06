@@ -20,21 +20,24 @@ const (
 	ContentTypeText           = "text"
 
 	defaultUserAgent   = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
-	apiURL             = "https://chat.openai.com/api"
-	backedAPIURL       = "https://chat.openai.com/backend-api"
+	apiAddr            = "https://chat.openai.com/api"
+	backendAPIAddr     = "https://chat.openai.com/backend-api"
 	cookieSessionToken = "__Secure-next-auth.session-token"
 
 	conversationEOF = "[DONE]"
+	sseDataPrefix   = "data: "
 )
 
 type Client struct {
 	httpClient *http.Client
 	// TODO(selman): dump request/response to a custom output.
-	debug        bool
-	userAgent    string
-	autoRefresh  bool
-	sessionToken string
-	accessToken  accessToken
+	apiAddr        string
+	backendAPIAddr string
+	userAgent      string
+	autoRefresh    bool
+	sessionToken   string
+	accessToken    accessToken
+	debug          bool
 }
 
 type ClientOption func(*Client)
@@ -50,6 +53,7 @@ func WithUserAgent(userAgent string) ClientOption {
 		c.userAgent = userAgent
 	}
 }
+
 func WithDebug() ClientOption {
 	return func(c *Client) {
 		c.debug = true
@@ -62,12 +66,21 @@ func WithAutoRefresh() ClientOption {
 	}
 }
 
+func WithAddr(addr string) ClientOption {
+	return func(c *Client) {
+		c.apiAddr = addr
+		c.backendAPIAddr = addr
+	}
+}
+
 func NewClient(sessionToken string, options ...ClientOption) *Client {
 	c := &Client{
-		httpClient:   http.DefaultClient,
-		userAgent:    defaultUserAgent,
-		autoRefresh:  true,
-		sessionToken: sessionToken,
+		httpClient:     http.DefaultClient,
+		apiAddr:        apiAddr,
+		backendAPIAddr: backendAPIAddr,
+		userAgent:      defaultUserAgent,
+		autoRefresh:    true,
+		sessionToken:   sessionToken,
 	}
 
 	for _, option := range options {
@@ -107,7 +120,7 @@ func (c *Client) doConversation(
 		return err
 	}
 
-	url, _ := url.JoinPath(backedAPIURL, "conversation")
+	url, _ := url.JoinPath(c.backendAPIAddr, "conversation")
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, &buf)
 	if err != nil {
 		return err
@@ -180,7 +193,7 @@ func (c *Client) authIfExpired(ctx context.Context) error {
 
 func (c *Client) doAuthSession(ctx context.Context) (*AuthSessionResponse, error) {
 	/// :fingers-crossed:
-	url, _ := url.JoinPath(apiURL, "auth", "session")
+	url, _ := url.JoinPath(c.apiAddr, "auth", "session")
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
