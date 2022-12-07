@@ -120,6 +120,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, sCmd)
 	case gptMessage:
 		m.gptinprogress = false
+		m.textarea.Focus()
+
 		if msg.Error != nil {
 			m.messages = append(
 				m.messages,
@@ -160,6 +162,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				wrap.String(m.senderStyle.Render("You: ")+text, m.textarea.Width()),
 			)
 			m.textarea.Reset()
+			m.textarea.Blur()
 
 			m.gptinprogress = true
 			go func(p string) {
