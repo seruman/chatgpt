@@ -187,9 +187,7 @@ func (m *model) View() string {
 		v += "\n\n" + m.spinner.View()
 	}
 
-	if !m.gptinprogress {
-		v += "\n\n" + m.textarea.View()
-	}
+	v += "\n\n" + m.textarea.View()
 
 	return v + "\n\n"
 }
